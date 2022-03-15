@@ -1,43 +1,63 @@
-from igdb.wrapper import IGDBWrapper
-from .models import Games
+from typing import (
+    List,
+    Dict,
+    Any
+)
 
-import json
 import requests
 
-with open('.secrets', 'r') as secrets:
-    secrets_json = json.load(secrets)
 
-CLIENT_ID = secrets_json['client_id']
-SECRET_CODE = secrets_json['secret_code']
+class IgdbWrapper:
+    def __init__(self, client_id, secret_code):
+        self.client_id = client_id
+        self.secret_code = secret_code
+        # TODO filters
+        self.body_params = " fields *; "
+        self._access_token = self._get_access_token()
+        self.headers = self.create_header()
 
-wrapper = IGDBWrapper(client_id=CLIENT_ID, auth_token=SECRET_CODE)
+    def _get_access_token(self) -> str:
+        token_response = requests.request("POST",
+                                          f"https://id.twitch.tv/oauth2/token?"
+                                          f"client_id={self.client_id}&"
+                                          f"client_secret={self.secret_code}&"
+                                          f"grant_type=client_credentials").json()
+        access_token = token_response['access_token']
+        return access_token
 
-token_response = requests.request("POST",
-                                  f"https://id.twitch.tv/oauth2/token?client_id={CLIENT_ID}&client_secret={SECRET_CODE}&"
-                                  f"grant_type=client_credentials").json()
+    def create_header(self) -> Dict[str, str]:
+        header = {
+            'Client-ID': self.client_id,
+            'Authorization': f"Bearer {self._access_token}"
+        }
+        response_code = requests.request("POST",
+                                         f"https://api.igdb.com/v4/games",
+                                         data=self.body_params,
+                                         headers=header
+                                         ).status_code
+        if response_code != 200:
+            self._access_token = self._get_access_token()
+            self.create_header()
+        else:
+            return {
+                'Client-ID': self.client_id,
+                'Authorization': f"Bearer {self._access_token}"
+            }
 
-access_token = token_response['access_token']
+    def get_games(self) -> List[Dict[str, Any]]:
 
-headers = {
-    'Client-ID': CLIENT_ID,
-    'Authorization': f"Bearer {access_token}"
-}
+        games_list = []
+        response_games = requests.request("POST",
+                                          f"https://api.igdb.com/v4/games",
+                                          data=self.body_params,
+                                          headers=self.headers
+                                          )
 
-body_games = 'fields *;'
+        for game in response_games.json():
+            games_list.append({
+                "name": game.get("name", ''),
+                "summary": game.get("summary", ''),
+                "twitch_url": game.get("url", 'None')
 
-
-def parse_games() -> list:
-    list_of_games = []
-    response_games = requests.request("POST", f"https://api.igdb.com/v4/games", data=body_games, headers=headers)
-    for game in response_games.json():
-        try:
-            list_of_games.append({
-                "game_name": game.get("name", "alsdjf"),
-                "summary": game["summary"],
-                "twitch_url": game["url"]
             })
-        except KeyError:
-            continue
-
-    return list_of_games
-
+        return games_list

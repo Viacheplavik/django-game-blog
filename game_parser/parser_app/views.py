@@ -1,12 +1,10 @@
 from django.shortcuts import render
 from .models import Games
-
-
-# from game_parser.game_parser.managers.igdb_manager import IGDB_manager
-# Create your views here.
+from .managers.igdb_manager import IgdbManager
 
 
 def games_view(request):
-    # IGDB_manager.create_objects_from_igdb_response()
-    all_games = Games.objects.all()
-    return render(request, 'games.html', {'all_games': all_games})
+    igdb_manager = IgdbManager()
+    igdb_manager.create_objects_from_igdb_response()
+    games = Games.objects.all()[:10]
+    return render(request, 'games.html', {'games': games})
