@@ -1,0 +1,5 @@
+<ul>
+{% for game in games %}
+    <li>Name: {{ game.name }}, URL: {{ game.twitch_url }}, Summary: {{ game.summary }}</li>
+{% endfor %}
+</ul>
