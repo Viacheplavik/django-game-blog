@@ -1,6 +1,8 @@
 from ..models import Games
 from ..parser import IgdbWrapper
 
+CLIENT_ID = 'bu2vadve064duzrmf81rfdrsec76sq'
+SECRETE_CODE = '9z5v1rhgi93g5r42d9p8y23qb33xvn'
 
 class IgdbManager:
     @staticmethod
